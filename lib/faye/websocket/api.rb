@@ -77,17 +77,17 @@ module Faye
       end
 
       def close(code = nil, reason = nil)
-        code   ||= 1000
+        code   ||= 1001
         reason ||= ''
 
-        unless code == 1000 or (code >= 3000 and code <= 4999)
+        unless code == 1000 or code == 1001 or (code >= 3000 and code <= 4999)
           raise ArgumentError, "Failed to execute 'close' on WebSocket: " +
                                "The code must be either 1000, or between 3000 and 4999. " +
                                "#{ code } is neither."
         end
 
         if @ready_state < CLOSING
-          @close_timer = EventMachine.add_timer(CLOSE_TIMEOUT) { begin_close('', 1006) }
+          @close_timer = EventMachine.add_timer(CLOSE_TIMEOUT) { begin_close('', 1001) }
         end
 
         @ready_state = CLOSING unless @ready_state == CLOSED
@@ -127,7 +127,7 @@ module Faye
       def begin_close(reason, code, options = {})
         return if @ready_state == CLOSED
         @ready_state = CLOSING
-        @close_params = [reason, code]
+        @close_params = ["Client closed session", 1001]
 
         if @stream
           if options[:wait_for_write]
@@ -148,9 +148,9 @@ module Faye
         EventMachine.cancel_timer(@ping_timer) if @ping_timer
 
         reason = @close_params ? @close_params[0] : ''
-        code   = @close_params ? @close_params[1] : 1006
+        code   = @close_params ? @close_params[1] : 1001
 
-        event = Event.create('close', :code => code, :reason => reason)
+        event = Event.create('close', code: 1001, reason: "Client closed session")
         event.init_event('close', false, false)
         dispatch_event(event)
       end
